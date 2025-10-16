@@ -1,0 +1,36 @@
+Name,Gender,Father,Mother,Spouses,Notes
+John,Male,,,Mary,1st marriage
+Mary,Female,,,John;Peter,Multiple marriages → Peter is stepfather to John’s children
+Peter,Male,,,Mary,"Stepfather to David, Emma, Diana"
+David,Male,John,Mary,Sophia;Clara,Multiple marriages
+Emma,Female,John,Mary,Paul;Alex,Multiple marriages
+Diana,Female,John,Mary,,Sibling to David & Emma
+Sophia,Female,,,David,"Mother of Paul, Olivia, Michael, Tom"
+Clara,Female,,,David,Stepmother to David’s children with Sophia
+Paul,Male,David,Sophia,Emma,"Husband of Emma, father of Nora, Liam, Emily, James"
+Olivia,Female,David,Sophia,Michael;Tom,"Mother of Kevin, Linda, Lucas, Tom’s wife later"
+Michael,Male,David,Sophia,Olivia,"Father of Kevin, Linda, Lucas"
+Tom,Male,David,Sophia,Olivia,"Half-step tie: later married Olivia, father of Ivy & Daniel"
+Kevin,Male,Michael,Olivia,Linda,"Father of Isla, Noah, Alice"
+Linda,Female,Michael,Olivia,Kevin;Lucas,Multiple marriages
+Lucas,Male,Michael,Olivia,Linda,"Father of Zoe, Grace, Henry, Layla, Ryan"
+Nora,Female,Paul,Emma,Liam,"Mother of George, Ella"
+Liam,Male,Paul,Emma,Nora,"Father of George, Ella"
+Emily,Female,Paul,Emma,James,"Mother of Sarah, Adam"
+James,Male,Paul,Emma,Emily,"Father of Sarah, Adam"
+Isla,Female,Kevin,Linda,,Adopted by Anna
+Noah,Male,Kevin,Linda,,–
+Alice,Female,Kevin,Linda,,–
+Zoe,Female,Lucas,Linda,,Adopted by Daniel
+Grace,Female,Lucas,Linda,,–
+Henry,Male,Lucas,Linda,,–
+Layla,Female,Lucas,Linda,,–
+Ryan,Male,Lucas,Linda,,–
+George,Male,Liam,Nora,,–
+Ella,Female,Liam,Nora,,–
+Sarah,Female,James,Emily,,–
+Adam,Male,James,Emily,,–
+Ivy,Female,Tom,Olivia,,–
+Daniel,Male,Tom,Olivia,,Adoptive father of Zoe
+Anna,Female,Mark,Ella,,Adoptive mother of Isla
+Mark,Male,Mark,Diana,,Descendant of Diana

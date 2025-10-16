@@ -1,0 +1,5 @@
+pyDatalog>=0.17
+pandas
+tabulate
+networkx
+pytest
