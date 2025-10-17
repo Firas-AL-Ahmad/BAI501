@@ -99,3 +99,44 @@ def test_cousin_rule():
     assert cousin('Alice', 'Grace') # Alice (child of Kevin) and Grace (child of Linda) are cousins because Kevin and Linda are siblings
     assert not cousin('John', 'Nora') # John is not cousin of Nora
     pyDatalog.clear()
+
+def test_grandchildren_of_john():
+    pyDatalog.clear()
+    load_facts_into_pydatalog(CSV_PATH)
+    define_family_rules()
+    # use string-based query for robustness
+    q = pyDatalog.ask('grandparent("John", X)')
+    grandchildren = set()
+    if q and q.answers:
+        for ans in q.answers:
+            grandchildren.add(str(ans[0]))
+    expected = {"Emily","James","Liam","Mark","Michael","Nora","Olivia","Paul","Tom"}
+    assert grandchildren == expected
+    pyDatalog.clear()
+
+def test_uncles_and_aunts_of_kevin():
+    pyDatalog.clear()
+    load_facts_into_pydatalog(CSV_PATH)
+    define_family_rules()
+    # uncles of Kevin (male siblings of parents)
+    q = pyDatalog.ask('uncle(X, "Kevin")')
+    uncles = set(str(ans[0]) for ans in q.answers) if q and q.answers else set()
+    expected_uncles = {"Michael","Paul","Tom"}
+    assert uncles == expected_uncles
+
+    # aunts of Kevin
+    q2 = pyDatalog.ask('aunt(X, "Kevin")')
+    aunts = set(str(ans[0]) for ans in q2.answers) if q2 and q2.answers else set()
+    expected_aunts = {"Olivia"}
+    assert aunts == expected_aunts
+    pyDatalog.clear()
+
+def test_cousins_of_sarah():
+    pyDatalog.clear()
+    load_facts_into_pydatalog(CSV_PATH)
+    define_family_rules()
+    q = pyDatalog.ask('cousin(X, "Sarah")')
+    cousins = set(str(ans[0]) for ans in q.answers) if q and q.answers else set()
+    expected = {"Adam","Ella","George"}
+    assert cousins == expected
+    pyDatalog.clear()
