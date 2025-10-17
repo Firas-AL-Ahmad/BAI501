@@ -17,8 +17,8 @@ except ImportError:
         "pyDatalog is not installed. Please install it using: pip install pyDatalog"
     )
 
-# Define PyDatalog terms globally
-pyDatalog.create_terms('father, mother, parent, child, son, daughter, is_male, is_female, spouse, X, Y')
+# Define PyDatalog terms globally (all terms used across facts and rules)
+pyDatalog.create_terms('father, mother, parent, child, son, daughter, is_male, is_female, spouse, sibling, grandparent, grandchild, uncle, aunt, cousin, X, Y, P, GP, GC, U, A, C')
 
 def _normalize_name(name: str) -> str:
     """Strips leading/trailing whitespace and collapses multiple internal spaces."""
@@ -90,14 +90,14 @@ def register_pydatalog_facts(df: pd.DataFrame) -> Dict[str, int]:
             + is_female(person_name)
             summary["num_females"] += 1
 
-        # Add father facts
+         #Add father facts
         if father_name:
-            + father(person_name, father_name)
+            + father(father_name, person_name)
             summary["num_fathers"] += 1
 
         # Add mother facts
         if mother_name:
-            + mother(person_name, mother_name)
+            + mother(mother_name,person_name)
             summary["num_mothers"] += 1
 
         # Add spouse facts (symmetric)
@@ -142,8 +142,9 @@ def load_facts_into_pydatalog(filepath: str) -> pd.DataFrame:
 
     return df
 
+CSV_FILEPATH = "family-expert-system/data/family_facts.csv"
+
 if __name__ == "__main__":
-    CSV_FILEPATH = "family-expert-system/data/family_facts.csv"
     print(f"Loading facts from: {CSV_FILEPATH}")
     df_facts = load_facts_into_pydatalog(CSV_FILEPATH)
     print("\nFirst 5 rows of loaded DataFrame:")

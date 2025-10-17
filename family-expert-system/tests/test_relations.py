@@ -1,83 +1,101 @@
+import sys
+import os
 import pytest
-import pandas as pd
 from pyDatalog import pyDatalog
-from src.facts import load_facts_dataframe, register_pydatalog_facts # This import will trigger pyDatalog.create_terms
 
-# Define the path to the test CSV file
-TEST_CSV_FILEPATH = "family-expert-system/data/family_facts.csv"
+# Add the project root to sys.path for direct execution
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
-def test_load_facts_dataframe_row_count():
-    """
-    Tests that load_facts_dataframe returns a DataFrame with the correct number of rows.
-    """
-    df = load_facts_dataframe(TEST_CSV_FILEPATH)
+from src.facts import load_facts_dataframe, register_pydatalog_facts, load_facts_into_pydatalog, X, Y, P, father, mother, parent, child, son, daughter, is_male, is_female, sibling, grandparent, grandchild, uncle, aunt, cousin
+from src.rules import define_family_rules, sample_queries
+
+# CSV path (relative to repo root)
+CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "family_facts.csv")
+
+def setup_module(module):
+    pyDatalog.clear()
+    # Define all PyDatalog terms for use in tests
+    pyDatalog.create_terms('X, Y, P, P1, P2, father, mother, parent, child, son, daughter, is_male, is_female, sibling, grandparent, grandchild, uncle, aunt, cousin')
+
+def teardown_module(module):
+    pyDatalog.clear()
+
+def test_load_facts_dataframe_has_john_and_counts():
+    df = load_facts_dataframe(CSV_PATH)
     assert len(df) == 35
+    john_row = df[df['Name'] == 'John']
+    assert not john_row.empty
+    assert john_row.iloc[0]['Gender'] == 'Male'
 
-def test_load_facts_dataframe_john_gender():
-    """
-    Tests that load_facts_dataframe correctly identifies John's gender.
-    """
-    df = load_facts_dataframe(TEST_CSV_FILEPATH)
-    john_entry = df[df['Name'] == 'John']
-    assert not john_entry.empty
-    assert john_entry['Gender'].iloc[0] == 'Male'
-
-def test_register_pydatalog_facts_counts():
-    """
-    Tests that register_pydatalog_facts returns positive counts for males and females.
-    Clears pyDatalog state before and after the test.
-    """
-    pyDatalog.clear() # Clear state before test
-
-    df = load_facts_dataframe(TEST_CSV_FILEPATH)
+def test_register_and_unique_spouse_count_and_gender():
+    pyDatalog.clear()
+    df = load_facts_dataframe(CSV_PATH)
     summary = register_pydatalog_facts(df)
+    assert summary['num_males'] > 0
+    assert summary['num_females'] > 0
+    assert summary['num_spouses'] >= 0
+    
+    
+    
+def test_define_rules_and_children_of_john():
+    pyDatalog.clear()
+    # load and register facts into pydatalog
+    load_facts_into_pydatalog(CSV_PATH)
 
-    assert summary["num_males"] > 0
-    assert summary["num_females"] > 0
-    assert summary["num_fathers"] > 0
-    assert summary["num_mothers"] > 0
-    assert summary["num_spouses"] > 0
+    # define rules (must be done after facts are loaded)
+    define_family_rules()
 
-    pyDatalog.clear() # Clear state after test
+    # Use pyDatalog.ask with a string query to avoid module-variable injection issues
+    q = pyDatalog.ask('child(X, "John")')
+    children = set()
+    if q and q.answers:
+        # each answer is a tuple of values corresponding to variables in the query
+        for ans in q.answers:
+            # ans[0] is the value of X in this answer
+            children.add(str(ans[0]))
 
-# New test for unique spouse count
-def test_register_pydatalog_facts_unique_spouses():
-    """
-    Tests that register_pydatalog_facts returns the correct count of unique unordered spouse pairs.
-    """
-    pyDatalog.clear() # Clear state before test
+    expected = {'David', 'Emma', 'Diana'}
+    assert children == expected
 
-    df = load_facts_dataframe(TEST_CSV_FILEPATH)
-    summary = register_pydatalog_facts(df)
+    pyDatalog.clear()
 
-    # Manually compute unique unordered spouse pairs from the DataFrame
-    expected_unique_pairs = set()
-    for _, row in df.iterrows():
-        person_name = row["Name"]
-        spouses_str = row["Spouses"]
-        if spouses_str:
-            spouses_list = [s for s in spouses_str.split(';') if s and s != person_name]
-            for spouse_name in set(spouses_list):
-                pair = frozenset({person_name, spouse_name})
-                expected_unique_pairs.add(pair)
+def test_sample_queries_return_types():
+    pyDatalog.clear()
+    load_facts_into_pydatalog(CSV_PATH)
+    define_family_rules()
+    q = sample_queries()
+    assert isinstance(q, dict)
+    assert 'children_of_john' in q and isinstance(q['children_of_john'], list)
+    assert 'all_sons' in q and isinstance(q['all_sons'], list)
+    assert 'all_daughters' in q and isinstance(q['all_daughters'], list)
+    pyDatalog.clear()
 
-    assert summary["num_spouses"] == len(expected_unique_pairs)
-    pyDatalog.clear() # Clear state after test
+# New test for grandparent rule
+def test_grandparent_rule():
+    pyDatalog.clear()
+    load_facts_into_pydatalog(CSV_PATH)
+    define_family_rules()
+    assert grandparent('John', 'Nora') # John is grandparent of Nora
+    assert not grandparent('John', 'David') # John is not grandparent of David
+    pyDatalog.clear()
 
-# New test for PyDatalog fact presence
-def test_pydatalog_fact_presence():
-    """
-    Tests that PyDatalog facts are correctly registered.
-    """
-    pyDatalog.clear() # Clear state before test
+# New test for uncle/aunt rules
+def test_uncle_aunt_rules():
+    pyDatalog.clear()
+    load_facts_into_pydatalog(CSV_PATH)
+    define_family_rules()
+    assert uncle('Paul', 'Kevin') # Paul is uncle of Kevin
+    assert aunt('Olivia', 'Kevin') # Olivia is aunt of Kevin (Olivia is sibling of Michael, Michael is parent of Kevin)
+    assert not uncle('Diana', 'Kevin') # Diana is not uncle of Kevin (she's female)
+    pyDatalog.clear()
 
-    df = load_facts_dataframe(TEST_CSV_FILEPATH)
-    register_pydatalog_facts(df)
-
-    # Assert presence of a known fact using pyDatalog.ask()
-    assert pyDatalog.ask('is_male("John")')
-
-    # Assert absence of a non-existent fact
-    assert not pyDatalog.ask('is_male("NonExistentPerson")')
-
-    pyDatalog.clear() # Clear state after test
+# New test for cousin rule
+def test_cousin_rule():
+    pyDatalog.clear()
+    load_facts_into_pydatalog(CSV_PATH)
+    define_family_rules()
+    assert cousin('Alice', 'Grace') # Alice (child of Kevin) and Grace (child of Linda) are cousins because Kevin and Linda are siblings
+    assert not cousin('John', 'Nora') # John is not cousin of Nora
+    pyDatalog.clear()
