@@ -18,7 +18,17 @@ except ImportError:
     )
 
 # Define PyDatalog terms globally (all terms used across facts and rules)
-pyDatalog.create_terms('father, mother, parent, child, son, daughter, is_male, is_female, spouse, sibling, grandparent, grandchild, uncle, aunt, cousin, X, Y, P, GP, GC, U, A, C')
+pyDatalog.create_terms('father, mother, parent, child, son, daughter, is_male, is_female, spouse, sibling, '
+                       'full_sibling, half_sibling, brother, sister, '
+                       'grandparent, grandfather, grandmother, great_grandparent, ancestor, descendant, '
+                       'uncle, aunt, first_cousin, second_cousin, cousin, cousin_degree, '
+                       'mother_in_law, father_in_law, brother_in_law, sister_in_law, '
+                       'son_in_law, daughter_in_law, sibling_in_law, niece_in_law, nephew_in_law, '
+                       'step_parent, step_child, step_sibling, step_grandparent, '
+                       'adoptive_parent, biological_parent, multiple_marriages, half_uncle, step_cousin, '
+                       'adoptive_father, adoptive_mother, '
+                       'X, Y, P, GP, GC, U, A, C, F, M, P1, P2, D, Z, S, SP, M1, M2, F1, F2, M_X, M_Y, F_X, F_Y, '
+                       'shares_father, shares_mother, M_of_X, M_of_Y, F_of_X, F_of_Y') # Added M_of_X, M_of_Y, F_of_X, F_of_Y
 
 def _normalize_name(name: str) -> str:
     """Strips leading/trailing whitespace and collapses multiple internal spaces."""
@@ -112,6 +122,18 @@ def register_pydatalog_facts(df: pd.DataFrame) -> Dict[str, int]:
                     # Add to unique_spouse_pairs set (unordered)
                     pair = frozenset({person_name, spouse_name})
                     unique_spouse_pairs.add(pair)
+
+        # Handle adoptive parent facts from Notes
+        notes = row["Notes"]
+        if notes:
+            if "Adoptive mother of" in notes:
+                child_name = notes.split("Adoptive mother of ")[1].strip()
+                + adoptive_mother(person_name, child_name)
+                # Do not add as biological mother or father
+            elif "Adoptive father of" in notes:
+                child_name = notes.split("Adoptive father of ")[1].strip()
+                + adoptive_father(person_name, child_name)
+                # Do not add as biological mother or father
 
     # Update num_spouses in summary after processing all individuals
     summary["num_spouses"] = len(unique_spouse_pairs)

@@ -26,11 +26,16 @@ Grace,Female,Lucas,Linda,,–
 Henry,Male,Lucas,Linda,,–
 Layla,Female,Lucas,Linda,,–
 Ryan,Male,Lucas,Linda,,–
-George,Male,Liam,Nora,,–
+George,Male,Liam,Nora,Fatima,–
 Ella,Female,Liam,Nora,,–
-Sarah,Female,James,Emily,,–
+Sarah,Female,James,Emily,Amir,–
 Adam,Male,James,Emily,,–
 Ivy,Female,Tom,Olivia,,–
 Daniel,Male,Tom,Olivia,,Adoptive father of Zoe
 Anna,Female,Mark,Ella,,Adoptive mother of Isla
 Mark,Male,Mark,Diana,,Descendant of Diana
+Amir,Male,,,Sarah,Married to Sarah (for mother-in-law example)
+Fatima,Female,,,George,Married to George (for siblings-in-law example)
+Rania,Female,,,Paul,Second spouse of Paul -> step-parent example
+Hassan,Male,,,Rania,Father of Oliver (previous marriage of Rania)
+Oliver,Male,Hassan,Rania,,Child of Rania from previous relationship — becomes step-sibling to Paul's children after Rania marries Paul
