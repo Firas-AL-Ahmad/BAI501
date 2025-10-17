@@ -27,3 +27,9 @@ The notebook is organized sequentially to make it easy to follow and grade:
 *   **No External Files**: All family facts are defined directly within the notebook code, satisfying the "no CSV" requirement.
 *   **Clear, Per-Question Outputs**: Each question's results are printed immediately after its corresponding code, making grading straightforward.
 *   **Robustness**: The code includes safeguards against common PyDatalog issues like name shadowing and incorrect variable binding.
+
+## Project Documentation
+
+For a complete, detailed explanation of the project, including a file-by-file overview and a deep dive into the rules and queries for each question, please see the full project report:
+
+- **[View the Full Documentation Report](DOCUMENTATION_REPORT.md)**

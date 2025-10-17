@@ -1,0 +1,237 @@
+===============================================================================
+BAI501 — Family Relations Expert System (PyDatalog)
+===============================================================================
+Student(s): Bassel ALKHATIB
+ID(s): 12345
+Note: Runs fully on Google Colab; No external files (No CSV).
+
+===============================================================================
+EXECUTIVE SUMMARY
+===============================================================================
+This project implements a rule-based expert system using Python and the pyDatalog library to model and query complex family relationships. The primary goal is to create a self-contained, runnable Google Colab notebook that defines a set of family facts and logical rules, and then uses those rules to answer a series of increasingly complex questions (Q1-Q9) about the family structure.
+
+When a grader executes "Run all" in the Colab notebook, they will see a sequential execution of cells. Each question is addressed in its own section, which defines the necessary rules and then runs queries. The output for each query is printed directly below the code cell in a clean, readable format, making it easy to verify the system's correctness and functionality for each specific task.
+
+===============================================================================
+ENVIRONMENT & REQUIREMENTS
+===============================================================================
+- Python: The core programming language used for the project.
+- Google Colab: The development and execution environment, allowing the notebook to be run online without local setup.
+- pyDatalog: The logic programming library used to define facts, rules, and queries for the expert system.
+- pandas: Used in legacy/unused script (`src/facts.py`) for loading data from CSV files. Not used by the final notebook.
+- io: Used in the notebook to import `StringIO`, though it is not actively used.
+
+===============================================================================
+PROJECT FILES OVERVIEW
+===============================================================================
++-----------------------------------------------+-----------+------------------------------------------+--------------------------------------+----------------------+------------------+-------------------------------+
+| Path                                          | Type      | Purpose / Role                           | Key contents (rules/functions)       | Used by              | Safe to remove?| Notes                         |
++-----------------------------------------------+-----------+------------------------------------------+--------------------------------------+----------------------+------------------+-------------------------------+
+| family_expert_system.ipynb                    | Notebook  | Main, runnable deliverable for Q1-Q9     | All facts, rules, and queries        | Graders/Users        | No               | "Run all" shows all outputs   |
+| src/facts.py                                  | Python    | Legacy script to load facts from CSV     | `load_facts_into_pydatalog`          | Dev (historical)     | Yes              | Not imported in final notebook|
+| src/rules.py                                  | Python    | Legacy script defining all logic rules   | `define_family_rules`                | Dev (historical)     | Yes              | Logic is inlined in notebook  |
+| src/queries.py                                | Python    | Legacy script to run queries             | `run_all_queries`                    | Dev (historical)     | Yes              | Queries are inlined in notebook|
+| tests/test_relations.py                       | Python    | Unit tests for the legacy scripts        | `pytest` tests for rules/queries     | Dev (historical)     | Yes              | Not required by graders       |
+| data/family_facts.csv                         | CSV       | Legacy data source for family facts      | Table of individuals and relations   | `src/facts.py`       | Yes              | Facts are hardcoded in notebook|
+| DOCUMENTATION_REPORT.txt                      | Text      | Formal documentation deliverable         | All sections as required             | Reviewers/Peers      | No               | This document                 |
+| README.md                                     | Markdown  | Quick start guide + project overview     | How to run notebook, link to report  | Everyone             | No               | Keep concise                  |
+| DOCUMENTATION_REPORT.md                       | Markdown  | Previous version of this report          | (Varies)                             | Legacy               | Yes              | Superseded by this TXT file   |
++-----------------------------------------------+-----------+------------------------------------------+--------------------------------------+----------------------+------------------+-------------------------------+
+
+===============================================================================
+RELATIONAL DATA MODEL
+===============================================================================
+The model represents people as strings and relationships as logical predicates.
+
+- Base Predicates:
+  * is_male/1   : Asserts that a person is male. Ex: `is_male('John')`
+  * is_female/1 : Asserts that a person is female. Ex: `is_female('Mary')`
+  * father/2    : Asserts that P is the father of C. Ex: `father('John', 'David')`
+  * mother/2    : Asserts that M is the mother of C. Ex: `mother('Mary', 'David')`
+  * spouse/2    : Asserts that P1 and P2 are spouses. Ex: `spouse('John', 'Mary')`
+
+- Core Predicates:
+  * parent/2    : P is a parent (father or mother) of C.
+  * child/2     : C is a child of P.
+  * son/2       : C is a male child of P.
+  * daughter/2  : C is a female child of P.
+
+- Siblings:
+  * sibling/2       : A and B share at least one parent.
+  * full_sibling/2  : A and B share both parents.
+  * half_sibling/2  : A and B share exactly one parent.
+  * brother/2       : A is a male sibling of B.
+  * sister/2        : A is a female sibling of B.
+
+- Ancestry:
+  * grandparent/2       : GP is a parent of a parent of C.
+  * grandfather/2       : GP is a male grandparent of C.
+  * grandmother/2       : GM is a female grandparent of C.
+  * great_grandparent/2 : GGP is a parent of a grandparent of C.
+  * ancestor/2          : A is an ancestor of D (recursive).
+  * descendant/2        : D is a descendant of A (recursive).
+
+- Extended Family:
+  * uncle/2         : U is the brother of a parent of N.
+  * aunt/2          : A is the sister of a parent of N.
+  * first_cousin/2  : X and Y's parents are siblings.
+  * second_cousin/2 : X and Y's parents are first cousins.
+  * cousin/2        : X is a first or second cousin of Y.
+
+- In-laws:
+  * mother_in_law/2   : M is the mother of P's spouse.
+  * father_in_law/2   : F is the father of P's spouse.
+  * sibling_in_law/2  : Sib is a sibling of P's spouse.
+  * brother_in_law/2  : B is a male sibling-in-law of P.
+  * sister_in_law/2   : Si is a female sibling-in-law of P.
+  * son_in_law/2      : SIL is the spouse of P's daughter.
+  * daughter_in_law/2 : DIL is the spouse of P's son.
+  * niece/2           : N is the daughter of P's sibling.
+  * nephew/2          : N is the son of P's sibling.
+  * niece_in_law/2    : N is the spouse of P's nephew.
+  * nephew_in_law/2   : Np is the spouse of P's niece.
+
+- Step Relationships:
+  * step_parent/2      : SP is the spouse of C's parent, but not a parent themselves.
+  * step_child/2       : SC is the child of S's spouse, but not S's child.
+  * step_sibling/2     : A and B share a step-parent but are not biological siblings.
+  * step_grandparent/2 : SG is the step-parent of C's parent.
+
+- Advanced (Q8):
+  * adoptive_parent/2 : P is an adoptive parent of C.
+  * adoptive_child/2  : C is an adoptive child of P.
+  * married_more_than_once/1 : P has had more than one spouse.
+  * child_of_multi_spouse_parent/1 : C's parent has had multiple spouses.
+  * step_cousin/2 : X and Y's parents are step-siblings.
+
+===============================================================================
+RULES BY QUESTION (Q1–Q9)
+===============================================================================
+Q1) Individuals and Basic Relationships
+- Idea: Establish the ground truth of the family tree by asserting facts for gender, parents, and spouses. Define the fundamental `parent/2` rule.
+- Key rules:
+----- RULE EXAMPLE -----
+parent(P, C) <= father(P, C)
+parent(P, C) <= mother(P, C)
+parent(P, C) <= adoptive_father(P, C)
+parent(P, C) <= adoptive_mother(P, C)
+------------------------
+- Main queries: `parent(P, 'David')`, `parent('John', C)`, `spouse('Mary', S)`
+- Expected OUTPUT: Lists of names for parents, children, or spouses.
+
+Q2) Core Family Roles
+- Idea: Define child, son, and daughter based on the `parent/2` rule and gender facts.
+- Key rules:
+----- RULE EXAMPLE -----
+child(C, P) <= parent(P, C)
+son(C, P) <= child(C, P) & is_male(C)
+------------------------
+- Main queries: `son(S, 'John')`, `daughter(D, 'John')`
+- Expected OUTPUT: Lists of sons' and daughters' names.
+
+Q3) Sibling Logic
+- Idea: Define rules for siblings, distinguishing between full (both parents shared) and half (one parent shared) siblings.
+- Key rules:
+----- RULE EXAMPLE -----
+sibling(A, B) <= parent(P, A) & parent(P, B) & (A != B)
+full_sibling(A, B) <= father(F, A) & father(F, B) & mother(M, A) & mother(M, B) & (A != B)
+half_sibling(A, B) <= sibling(A, B) & ~full_sibling(A, B)
+------------------------
+- Main queries: `sibling(S, 'Alice')`, `half_sibling(H, 'Michael')`
+- Expected OUTPUT: Lists of siblings' names.
+
+Q4) Ancestry and Descendants
+- Idea: Define multi-generational relationships like grandparents and use recursion to define a general `ancestor/2` rule.
+- Key rules:
+----- RULE EXAMPLE -----
+grandparent(GP, C) <= parent(GP, P) & parent(P, C)
+ancestor(A, D) <= parent(A, D)
+ancestor(A, D) <= parent(A, P) & ancestor(P, D)
+------------------------
+- Main queries: `ancestor(A, 'Liam')`, `descendant(D, 'Emma')`
+- Expected OUTPUT: Lists of ancestors' or descendants' names.
+
+Q5) Extended Family (uncle/aunt/cousins)
+- Idea: Build upon parent and sibling rules to define uncles, aunts, and cousins.
+- Key rules:
+----- RULE EXAMPLE -----
+uncle(U, N) <= brother(U, P) & parent(P, N)
+first_cousin(X, Y) <= parent(P1, X) & parent(P2, Y) & sibling(P1, P2) & (X != Y)
+------------------------
+- Main queries: `cousin(C, 'Noah')`, `uncle(U, 'Emily')`
+- Expected OUTPUT: Lists of cousins', uncles', or aunts' names.
+
+Q6) Spouse Symmetry & In-Laws
+- Idea: Define relationships that arise from marriage, such as mother-in-law and sibling-in-law.
+- Key rules:
+----- RULE EXAMPLE -----
+mother_in_law(M, P) <= spouse(P, S) & mother(M, S)
+sibling_in_law(Sib, P) <= spouse(P, S) & sibling(Sib, S) & (Sib != P)
+------------------------
+- Main queries: `mother_in_law(M, 'James')`, `brother_in_law(B, 'Emily')`
+- Expected OUTPUT: Lists of in-laws' names.
+
+Q7) Step Relationships
+- Idea: Define relationships from remarriage, ensuring they are distinct from biological relationships.
+- Key rules:
+----- RULE EXAMPLE -----
+step_parent(S, C) <= spouse(S, P) & parent(P, C) & ~parent(S, C)
+step_sibling(A, B) <= step_parent(S, A) & parent(S, B) & (A != B) & ~sibling(A,B)
+------------------------
+- Main queries: `step_sibling(S, 'Oliver')`, `step_parent(SP, 'David')`
+- Expected OUTPUT: Lists of step-relatives' names.
+
+Q8) Advanced Family Queries
+- Idea: Handle more complex scenarios like adoption, multiple marriages, and step-cousins.
+- Key rules:
+----- RULE EXAMPLE -----
+married_more_than_once(P) <= spouse(P, S1) & spouse(P, S2) & (S1 != S2)
+step_cousin(X, Y) <= parent(P1, X) & parent(P2, Y) & step_sibling(P1, P2) & (X != Y)
+------------------------
+- Main queries: `adoptive_parent(P, 'Daniel')`, `child_of_multi_spouse_parent(C)`
+- Expected OUTPUT: Lists of names for people in these complex relationships.
+
+Q9) Generalized/Utility Queries
+- Idea: Use Python helper functions to perform graph-like analysis on the knowledge base, such as finding relatives within N generations or identifying disconnected family groups.
+- Key rules: This section uses Python functions that call pyDatalog.ask() repeatedly.
+- Main queries: `relatives_within_generations('Emily', 2)`, `find_connected_components()`
+- Expected OUTPUT: Formatted lists of relatives by distance or distinct family groups.
+
+Technical Notes:
+- The condition `(A != B)` is consistently placed at the end of rule bodies to prevent unbound variable errors in pyDatalog.
+- Rules avoid comparing goals to booleans (e.g., `(goal == True)` is not used).
+- Variable names are chosen carefully to avoid shadowing within complex rules.
+
+===============================================================================
+COLAB EXECUTION GUIDE
+===============================================================================
+1) Open the `family_expert_system.ipynb` file in Google Colab.
+2) From the menu, select "Runtime" -> "Restart and run all...".
+3) Confirm the action in the popup.
+4) The notebook will execute from top to bottom. The output for each question appears in a distinct block directly below the corresponding query cell, prefixed with "OUTPUT for Qx".
+
+The "Safety Guard & Helper Functions" cell and the re-declaration of terms in some cells ensure that the notebook is idempotent, meaning it can be re-run without clearing facts or causing errors.
+
+===============================================================================
+TESTING & VERIFICATION
+===============================================================================
+The final notebook is verified by manually inspecting the output of each query cell to ensure it matches expected results based on the defined facts.
+
+However, the project repository contains a `tests/test_relations.py` file, which uses the `pytest` framework to run a comprehensive suite of automated unit tests. These tests were designed for the legacy, modular version of the project (which used `src/*.py` files and a CSV). They programmatically check the correctness of each rule by asserting expected relationships for specific individuals. While not run as part of the notebook, their existence demonstrates that a robust testing strategy was employed during development.
+
+===============================================================================
+ASSUMPTIONS & LIMITATIONS
+===============================================================================
+- The model does not handle complex adoption scenarios beyond the simple `adoptive_parent` facts provided. Queries for adoption may return "(no results)" if no such facts exist for a person.
+- The definition of "cousin" is limited to first and second cousins. More distant cousin relationships are not modeled.
+- The definition of "step-cousin" is based on one specific interpretation (parents are step-siblings) and may not cover all possible real-world definitions.
+- The knowledge base is static and defined entirely within the notebook. It does not support dynamic updates.
+
+===============================================================================
+APPENDIX
+===============================================================================
+- Glossary:
+  * Ancestor vs. Grandparent: A grandparent is an ancestor exactly two generations away. An ancestor can be any number of generations away (parent, grandparent, great-grandparent, etc.).
+  * Cousin Degrees: First cousins share grandparents. Second cousins share great-grandparents.
+  * In-laws: Relationships through marriage. A mother-in-law is your spouse's mother.
+  * Step Relations: Relationships through remarriage. A step-parent is your parent's spouse who is not your biological parent.
